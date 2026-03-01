@@ -1,0 +1,14 @@
+# ─────────────────────────────────────────────────────────────
+# Dockerfile.db — PostgreSQL con script de inicialización
+# ─────────────────────────────────────────────────────────────
+FROM postgres:16-alpine
+
+# Variables de entorno por defecto (sobreescribibles en docker-compose)
+ENV POSTGRES_USER=voucher_user
+ENV POSTGRES_PASSWORD=voucher_pass
+ENV POSTGRES_DB=voucher_db
+
+# Copiar scripts de inicialización opcionales
+COPY docker/init-db.sql /docker-entrypoint-initdb.d/init-db.sql
+
+EXPOSE 5432

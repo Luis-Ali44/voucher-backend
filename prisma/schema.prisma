@@ -1,0 +1,116 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────
+// USUARIO
+// ─────────────────────────────────────────
+model User {
+    id        String   @id @default(cuid())
+    name      String
+    email     String   @unique
+    password  String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    config        UserConfig?
+    gastos        Gasto[]
+    ingresosExtra IngresoExtra[]
+    transacciones Transaccion[]
+
+    @@map("users")
+}
+
+// ─────────────────────────────────────────
+// CONFIGURACIÓN FINANCIERA INICIAL
+// ─────────────────────────────────────────
+model UserConfig {
+    id              String     @id @default(cuid())
+    salario         Float
+    frecuencia      Frecuencia
+    diaInicio       Int
+    saldoActual     Float      @default(0)
+    ahorroHistorico Float      @default(0)
+    // Payload en espera: cambios de salario/diaInicio que se aplican al próximo ciclo
+    pendingConfig   Json?
+    updatedAt       DateTime   @updatedAt
+
+    userId String @unique
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@map("user_configs")
+}
+
+// ─────────────────────────────────────────
+// GASTOS RECURRENTES / VITALES
+// ─────────────────────────────────────────
+model Gasto {
+    id                    String         @id @default(cuid())
+    nombre                String
+    monto                 Float
+    categoria             CategoriaGasto
+    frecuencia            Frecuencia
+    pagado                Boolean        @default(false)
+    // Soft delete: si true, el ciclo actual lo respeta pero el próximo lo ignora
+    canceladoParaElFuturo Boolean        @default(false)
+    createdAt             DateTime       @default(now())
+    updatedAt             DateTime       @updatedAt
+
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@map("gastos")
+}
+
+// ─────────────────────────────────────────
+// TRANSACCIONES VARIABLES (historial)
+// ─────────────────────────────────────────
+model Transaccion {
+    id        String   @id @default(cuid())
+    nombre    String
+    monto     Float
+    createdAt DateTime @default(now())
+
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@map("transacciones")
+}
+
+// ─────────────────────────────────────────
+// INGRESOS EXTRA
+// ─────────────────────────────────────────
+model IngresoExtra {
+    id        String   @id @default(cuid())
+    monto     Float
+    origen    String?
+    reservado Boolean  @default(false)
+    createdAt DateTime @default(now())
+
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@map("ingresos_extra")
+}
+
+// ─────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────
+enum Frecuencia {
+    Semanal
+    Quincenal
+    Mensual
+}
+
+enum CategoriaGasto {
+    Vital
+    Recurrente
+}
